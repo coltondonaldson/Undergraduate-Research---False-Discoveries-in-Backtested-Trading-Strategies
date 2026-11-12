@@ -80,3 +80,9 @@ def summary(returns):
             'Ann. Volatility': ann_vol, 
             'Sharpe': sharpe, 
             'Max Drawdown': worst_drawdown}
+
+# Function to generate random positions of -1 or +1 with equal probability
+def random_long_short_positions(index, rng):
+    positions = rng.choice([-1.0, 1.0], size=len(index))
+    long_short_positions = pd.Series(positions, index=index)
+    return long_short_positions
