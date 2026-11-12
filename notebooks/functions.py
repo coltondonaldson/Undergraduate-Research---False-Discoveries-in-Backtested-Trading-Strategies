@@ -1,3 +1,8 @@
+# Importing the necessary packages
+import yfinance as yf
+import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
 
 # Function to retrieve data for any asset in any time period
 def get_data(ticker, start_date, end_date):
@@ -70,7 +75,8 @@ def performance_metrics(returns):
 
 # Function to summarize all metrics for one strategy
 def summary(returns):
-    return {'Ann. Return': annualized_return(returns), 
-            'Ann. Volatility': annualized_volatility(returns), 
-            'Sharpe': sharpe_ratio(returns), 
-            'Max Drawdown': max_drawdown(returns)}
+    ann_return, ann_vol, sharpe, worst_drawdown = performance_metrics(returns)
+    return {'Ann. Return': ann_return, 
+            'Ann. Volatility': ann_vol, 
+            'Sharpe': sharpe, 
+            'Max Drawdown': worst_drawdown}
