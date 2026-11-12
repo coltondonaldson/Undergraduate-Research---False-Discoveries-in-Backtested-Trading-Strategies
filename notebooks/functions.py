@@ -86,3 +86,11 @@ def random_long_short_positions(index, rng):
     positions = rng.choice([-1.0, 1.0], size=len(index))
     long_short_positions = pd.Series(positions, index=index)
     return long_short_positions
+
+# Function to generate random positions in [-1, 1] with density f(x) = 3x^2/2
+def random_continuous_positions(index, rng):
+    y = rng.uniform(0, 1, size=len(index))
+    positions = np.cbrt(2*y - 1)              # inverse CDF of f(x) = 3x^2/2 (derived in report)
+    continuous_positions = pd.Series(positions, index=index)
+    return continuous_positions
+    
