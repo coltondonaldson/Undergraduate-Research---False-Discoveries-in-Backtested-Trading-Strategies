@@ -94,3 +94,22 @@ def random_continuous_positions(index, rng):
     continuous_positions = pd.Series(positions, index=index)
     return continuous_positions
     
+# Function to run every random strategy through the backtest (and keep a sample for visualization)
+def run_random_grid(ticker, ticker_data, asset_returns, n_strategies, seed, sample_every=40):
+    rng = np.random.default_rng(seed)            # same seed gives the same strategies every run
+    results = {}
+    sample_returns = {}
+    for k in range(n_strategies):
+        positions = random_long_short_positions(ticker_data.index, rng)
+        returns = strategy_returns(positions, asset_returns)
+        results[f'{ticker}_Long_Short_{k}'] = summary(returns)
+        if k % sample_every == 0:
+            sample_returns[f'{ticker}_Long_Short_{k}'] = returns
+    for k in range(n_strategies):
+        positions = random_continuous_positions(ticker_data.index, rng)
+        returns = strategy_returns(positions, asset_returns)
+        results[f'{ticker}_Continuous_{k}'] = summary(returns)
+        if k % sample_every == 0:
+            sample_returns[f'{ticker}_Continuous_{k}'] = returns
+    results_df = pd.DataFrame(results).T
+    return results_df, sample_returns
