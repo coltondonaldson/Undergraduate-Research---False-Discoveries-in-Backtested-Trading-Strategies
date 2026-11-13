@@ -18,7 +18,7 @@ def strategy_returns(positions, open_prices, close_prices, cost=0.0):
     trade_size = (current_position - previous_position).abs()                                     # how much you bought or sold at today's open
     intraday_returns = (close_prices - open_prices) / open_prices                                 # return from today's open to today's close
     overnight_returns = (open_prices / close_prices.shift(1) - 1).fillna(0)                       # return from yesterday's close to today's open
-    gross_returns = (1 + previous_position * overnight_returns) * (1 + current_position * intraday_returns) - 1
+    gross_returns = (1 + previous_position * overnight_returns) * (1 + current_position * intraday_returns) - 1     # overnight and intraday returns compound
     trading_costs = cost * trade_size                                                             # cost paid on the amount traded
     net_returns = gross_returns - trading_costs
     return net_returns
