@@ -3,6 +3,7 @@ import yfinance as yf
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from scipy import stats
 
 # Function to retrieve data for any asset in any time period
 def get_data(ticker, start_date, end_date):
@@ -10,22 +11,16 @@ def get_data(ticker, start_date, end_date):
     data = data[['Open', 'Close']]
     return data
 
-# Function to calculate the close-to-close returns for a ticker
-def daily_returns(ticker_data):
-    current = ticker_data['Close']
-    previous = current.shift(1)                  # yesterday's close lined up with today's
-    returns = (current - previous) / previous    # % change from yesterday to today
-    returns = returns.fillna(0)                  # first day has no previous close
-    return returns
-
 # Function to calculate a strategy's daily returns
-def strategy_returns(positions, asset_returns, cost=0.0):
-    position = positions.shift(1).fillna(0)              # today you hold what you decided at yesterday's close
-    previous_position = position.shift(1).fillna(0)      # what you held the day before
-    trade_size = (position - previous_position).abs()    # how much you bought or sold to get to today's position
-    gross_returns = position * asset_returns             # return earned on the position held
-    trading_costs = cost * trade_size                    # cost paid on the amount traded
-    net_returns = gross_returns - trading_costs   
+def strategy_returns(positions, open_prices, close_prices, cost=0.0):
+    current_position = positions.shift(1).fillna(0)                                               # today's position is based on yesterday's close
+    previous_position = current_position.shift(1).fillna(0)                                       # what you held before today's market open
+    trade_size = (current_position - previous_position).abs()                                     # how much you bought or sold at today's open
+    intraday_returns = (close_prices - open_prices) / open_prices                                 # return from today's open to today's close
+    overnight_returns = (open_prices / close_prices.shift(1) - 1).fillna(0)                       # return from yesterday's close to today's open
+    gross_returns = previous_position * overnight_returns + current_position * intraday_returns   # returns earned while holding each position
+    trading_costs = cost * trade_size                                                             # cost paid on the amount traded
+    net_returns = gross_returns - trading_costs
     return net_returns
 
 # Function to calculate cumulative % growth
@@ -38,7 +33,7 @@ def cumulative_return(returns):
 # Function to calculate annualized return
 def annualized_return(returns):
     total_growth = (1 + returns).prod()                # final value of $1
-    years = (len(returns) - 1) / 252                   # 252 trading days in a year
+    years = (len(returns)) / 252                   # 252 trading days in a year
     ann_return = total_growth ** (1 / years) - 1
     return ann_return
 
@@ -95,19 +90,19 @@ def random_continuous_positions(index, rng):
     return continuous_positions
     
 # Function to run every random strategy through the backtest (and keep a sample for visualization)
-def run_random_grid(ticker, ticker_data, asset_returns, n_strategies, seed, sample_every=40):
-    rng = np.random.default_rng(seed)            # same seed gives the same strategies every run
+def run_random_grid(ticker, ticker_data, n_strategies, seed, sample_every=40):
+    rng = np.random.default_rng(seed)                 # same seed gives the same strategies every run
     results = {}
     sample_returns = {}
     for k in range(n_strategies):
         positions = random_long_short_positions(ticker_data.index, rng)
-        returns = strategy_returns(positions, asset_returns)
+        returns = strategy_returns(positions, ticker_data['Open'], ticker_data['Close'])
         results[f'{ticker}_Long_Short_{k}'] = summary(returns)
         if k % sample_every == 0:
             sample_returns[f'{ticker}_Long_Short_{k}'] = returns
     for k in range(n_strategies):
         positions = random_continuous_positions(ticker_data.index, rng)
-        returns = strategy_returns(positions, asset_returns)
+        returns = strategy_returns(positions, ticker_data['Open'], ticker_data['Close'])
         results[f'{ticker}_Continuous_{k}'] = summary(returns)
         if k % sample_every == 0:
             sample_returns[f'{ticker}_Continuous_{k}'] = returns
